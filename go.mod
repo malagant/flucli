@@ -11,7 +11,7 @@ require (
 	github.com/fluxcd/helm-controller/api v0.36.2
 	github.com/fluxcd/kustomize-controller/api v1.2.2
 	github.com/fluxcd/source-controller/api v1.2.4
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.10.0
 	k8s.io/api v0.33.0
@@ -69,7 +69,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
