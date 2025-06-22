@@ -18,7 +18,7 @@ LDFLAGS := -X main.Version=$(VERSION) \
           -X main.GoVersion=$(GO_VERSION)
 
 # Go commands (with Nix shell wrapper)
-GO_CMD := nix shell 'nixpkgs#go' -c go
+GO_CMD := nix shell nixpkgs\#go -c go
 GO_BUILD := $(GO_CMD) build
 GO_TEST := $(GO_CMD) test
 GO_VET := $(GO_CMD) vet

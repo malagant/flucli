@@ -63,6 +63,11 @@ func (c *Client) ListGitRepositories(ctx context.Context, namespace string) ([]R
 	}
 
 	if err := c.List(ctx, &gitRepos, opts...); err != nil {
+		// Check if this is a "no matches for kind" error, which means the CRD isn't installed
+		if client.IgnoreNotFound(err) == nil {
+			// Resource not found is okay - just return empty list
+			return []Resource{}, nil
+		}
 		return nil, fmt.Errorf("failed to list GitRepositories: %w", err)
 	}
 
@@ -109,16 +114,68 @@ func (c *Client) ListGitRepositories(ctx context.Context, namespace string) ([]R
 
 // ListHelmRepositories lists all HelmRepository resources
 func (c *Client) ListHelmRepositories(ctx context.Context, namespace string) ([]Resource, error) {
-	var helmRepos sourcev1beta2.HelmRepositoryList
 	opts := []client.ListOption{}
 	if namespace != "" {
 		opts = append(opts, client.InNamespace(namespace))
 	}
 
+	// Try v1beta2 first (latest), then fallback to v1 if available
+	var helmRepos sourcev1beta2.HelmRepositoryList
 	if err := c.List(ctx, &helmRepos, opts...); err != nil {
-		return nil, fmt.Errorf("failed to list HelmRepositories: %w", err)
+		// Check if this is a "no matches for kind" error, which means the CRD isn't installed
+		if client.IgnoreNotFound(err) == nil {
+			// Resource not found is okay - just return empty list
+			return []Resource{}, nil
+		}
+		
+		// Try fallback to v1 API if v1beta2 fails
+		var helmReposV1 sourcev1.HelmRepositoryList
+		if errV1 := c.List(ctx, &helmReposV1, opts...); errV1 != nil {
+			if client.IgnoreNotFound(errV1) == nil {
+				return []Resource{}, nil
+			}
+			// Return the original v1beta2 error with additional context
+			return nil, fmt.Errorf("failed to list HelmRepositories (tried v1beta2 and v1): v1beta2=%w, v1=%v", err, errV1)
+		}
+		
+		// Convert v1 results to our format
+		resources := make([]Resource, 0, len(helmReposV1.Items))
+		for _, repo := range helmReposV1.Items {
+			resource := Resource{
+				Type:       ResourceTypeHelmRepository,
+				Name:       repo.Name,
+				Namespace:  repo.Namespace,
+				Age:        time.Since(repo.CreationTimestamp.Time),
+				LastUpdate: time.Now(),
+				Suspended:  repo.Spec.Suspend,
+				URL:        repo.Spec.URL,
+			}
+
+			// Parse status (v1 format)
+			if repo.Status.Conditions != nil {
+				for _, cond := range repo.Status.Conditions {
+					resource.Conditions = append(resource.Conditions, Condition{
+						Type:               cond.Type,
+						Status:             string(cond.Status),
+						Reason:             cond.Reason,
+						Message:            cond.Message,
+						LastTransitionTime: cond.LastTransitionTime.Time,
+					})
+				}
+			}
+
+			if len(repo.Status.Conditions) > 0 {
+				lastCond := repo.Status.Conditions[len(repo.Status.Conditions)-1]
+				resource.Status = string(lastCond.Status)
+				resource.Message = lastCond.Message
+			}
+
+			resources = append(resources, resource)
+		}
+		return resources, nil
 	}
 
+	// Process v1beta2 results normally
 	resources := make([]Resource, 0, len(helmRepos.Items))
 	for _, repo := range helmRepos.Items {
 		resource := Resource{
@@ -131,7 +188,7 @@ func (c *Client) ListHelmRepositories(ctx context.Context, namespace string) ([]
 			URL:        repo.Spec.URL,
 		}
 
-		// Parse status
+		// Parse status (v1beta2 format)
 		if repo.Status.Conditions != nil {
 			for _, cond := range repo.Status.Conditions {
 				resource.Conditions = append(resource.Conditions, Condition{
@@ -141,17 +198,13 @@ func (c *Client) ListHelmRepositories(ctx context.Context, namespace string) ([]
 					Message:            cond.Message,
 					LastTransitionTime: cond.LastTransitionTime.Time,
 				})
-
-				if cond.Type == "Ready" {
-					resource.Ready = cond.Status == metav1.ConditionTrue
-					resource.Status = cond.Reason
-					resource.Message = cond.Message
-				}
 			}
 		}
 
-		if repo.Status.Artifact != nil {
-			resource.Revision = repo.Status.Artifact.Revision
+		if len(repo.Status.Conditions) > 0 {
+			lastCond := repo.Status.Conditions[len(repo.Status.Conditions)-1]
+			resource.Status = string(lastCond.Status)
+			resource.Message = lastCond.Message
 		}
 
 		resources = append(resources, resource)
@@ -169,6 +222,11 @@ func (c *Client) ListKustomizations(ctx context.Context, namespace string) ([]Re
 	}
 
 	if err := c.List(ctx, &kustomizations, opts...); err != nil {
+		// Check if this is a "no matches for kind" error, which means the CRD isn't installed
+		if client.IgnoreNotFound(err) == nil {
+			// Resource not found is okay - just return empty list
+			return []Resource{}, nil
+		}
 		return nil, fmt.Errorf("failed to list Kustomizations: %w", err)
 	}
 
@@ -226,6 +284,11 @@ func (c *Client) ListHelmReleases(ctx context.Context, namespace string) ([]Reso
 	}
 
 	if err := c.List(ctx, &helmReleases, opts...); err != nil {
+		// Check if this is a "no matches for kind" error, which means the CRD isn't installed
+		if client.IgnoreNotFound(err) == nil {
+			// Resource not found is okay - just return empty list
+			return []Resource{}, nil
+		}
 		return nil, fmt.Errorf("failed to list HelmReleases: %w", err)
 	}
 
