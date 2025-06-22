@@ -97,6 +97,7 @@ defaults:
 - [Architecture](architecture.md) - System design and components
 - [User Guide](user-guide.md) - Comprehensive usage documentation
 - [Multi-Cluster Support](multi-cluster-support.md) - Cluster management details
+- [Development Environment](development-environment.md) - Nix flake setup and development workflow
 - [Feature Specifications](specs/) - Detailed feature documentation
 
 ## Contributing

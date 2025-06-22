@@ -369,12 +369,34 @@ func (c *Client) ReconcileResource(ctx context.Context, resourceType ResourceTyp
 
 // GetEvents returns Kubernetes events related to FluxCD resources
 func (c *Client) GetEvents(ctx context.Context, namespace string) ([]corev1.Event, error) {
+	// Get all events first, then filter in-memory since Kubernetes field selectors
+	// don't support OR conditions for the same field or complex time comparisons
+	oneHourAgo := time.Now().Add(-1 * time.Hour)
 	eventList, err := c.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
-		FieldSelector: "involvedObject.apiVersion=source.toolkit.fluxcd.io/v1,kustomize.toolkit.fluxcd.io/v1,helm.toolkit.fluxcd.io/v2beta1",
+		// Remove all field selectors to avoid API errors - do filtering in-memory instead
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list events: %w", err)
 	}
 
-	return eventList.Items, nil
+	// Filter events to only include FluxCD-related resources from the last hour
+	fluxEvents := make([]corev1.Event, 0)
+	for _, event := range eventList.Items {
+		// Time-based filtering - only include events from the last hour
+		if event.FirstTimestamp.Time.Before(oneHourAgo) && event.LastTimestamp.Time.Before(oneHourAgo) {
+			continue
+		}
+
+		apiVersion := event.InvolvedObject.APIVersion
+		// Check if event is related to FluxCD resources
+		if apiVersion == "source.toolkit.fluxcd.io/v1" ||
+			apiVersion == "source.toolkit.fluxcd.io/v1beta2" ||
+			apiVersion == "kustomize.toolkit.fluxcd.io/v1" ||
+			apiVersion == "helm.toolkit.fluxcd.io/v2beta1" ||
+			apiVersion == "helm.toolkit.fluxcd.io/v2" {
+			fluxEvents = append(fluxEvents, event)
+		}
+	}
+
+	return fluxEvents, nil
 }

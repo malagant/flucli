@@ -167,60 +167,22 @@ ui:
 
 FluxCLI provides several development tools and scripts:
 
-### Development Environment
+### Development Setup
 
-We use Nix for reproducible development environments:
-
+**Option 1: Nix Flake (Recommended)**
 ```bash
-# Enter development shell (provides Go, kubectl, helm, etc.)
-./dev.sh shell
-
-# Or use individual commands
-./dev.sh build    # Build the binary
-./dev.sh test     # Run tests
-./dev.sh lint     # Run linter
-./dev.sh tidy     # Tidy Go modules
+# Provides all development tools in an isolated environment
+nix develop
+./dev.sh build
 ```
 
-### Using Make
-
+**Option 2: Manual Setup**
 ```bash
-make help         # Show all available commands
-make build        # Build FluxCLI
-make test         # Run tests
-make lint         # Run linter
-make run          # Build and run
-make clean        # Clean artifacts
+# Install Go 1.24+, kubectl, flux, etc. manually
+go build -o fluxcli
 ```
 
-### Project Structure
-
-```
-fluxcli/
-├── cmd/                 # CLI commands and entry points
-├── pkg/
-│   ├── core/           # Core application logic
-│   ├── k8s/            # Kubernetes client and resource management
-│   └── ui/             # Terminal UI components (Bubble Tea)
-├── internal/
-│   └── config/         # Configuration management
-├── docs/               # Documentation
-├── dev.sh              # Development helper script
-├── Makefile            # Build automation
-├── flake.nix           # Nix development environment
-└── go.mod              # Go module definition
-```
-
-## 📚 Documentation
-
-- [User Guide](docs/user-guide.md) - Comprehensive usage guide
-- [Architecture](docs/architecture.md) - Technical architecture overview
-- [Multi-Cluster Support](docs/multi-cluster-support.md) - Multi-cluster configuration
-- [MVP Features](docs/specs/mvp-features.md) - MVP feature specifications
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+See [docs/development-environment.md](docs/development-environment.md) for detailed setup instructions.
 
 ### Development Workflow
 
@@ -232,6 +194,17 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 6. Commit your changes (`git commit -m 'Add some amazing feature'`)
 7. Push to the branch (`git push origin feature/amazing-feature`)
 8. Open a Pull Request
+
+## 📚 Documentation
+
+- [User Guide](docs/user-guide.md) - Comprehensive usage guide
+- [Architecture](docs/architecture.md) - Technical architecture overview
+- [Multi-Cluster Support](docs/multi-cluster-support.md) - Multi-cluster configuration
+- [MVP Features](docs/specs/mvp-features.md) - MVP feature specifications
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## 📋 Requirements
 
