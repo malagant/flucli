@@ -17,7 +17,6 @@ updates:
       include: "scope"
     labels:
       - "dependencies"
-      - "automated"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -35,5 +34,4 @@ updates:
       prefix: "ci"
       include: "scope"
     labels:
-      - "github-actions"
-      - "automated"
+      - "dependencies"
