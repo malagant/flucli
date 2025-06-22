@@ -62,7 +62,7 @@ func init() {
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.fluxcli/config.yaml)")
-	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "path to kubeconfig file (default is $HOME/.kube/config)")
+	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "path to kubeconfig file (default is $KUBECONFIG env var, then $HOME/.kube/config)")
 	rootCmd.PersistentFlags().StringVar(&context, "context", "", "kubernetes context to use")
 	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "kubernetes namespace to use")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug mode")

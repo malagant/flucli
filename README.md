@@ -70,6 +70,42 @@ go build -o fluxcli .
 2. **Launch**: Run `fluxcli` to start the terminal interface
 3. **Navigate**: Use keyboard shortcuts to browse your FluxCD resources
 
+### Kubernetes Configuration
+
+FluxCLI follows standard Kubernetes tooling conventions for kubeconfig resolution. You have several options to specify your Kubernetes configuration:
+
+#### Using Environment Variables (Recommended)
+
+```bash
+# Set KUBECONFIG environment variable
+export KUBECONFIG=/path/to/your/kubeconfig
+fluxcli
+
+# Multiple kubeconfig files (standard Kubernetes convention)
+export KUBECONFIG=/path/to/config1:/path/to/config2
+fluxcli
+```
+
+#### Using Command Line Flags
+
+```bash
+# Specify kubeconfig file explicitly
+fluxcli --kubeconfig ~/.kube/config
+
+# Specify context and namespace
+fluxcli --context my-cluster --namespace flux-system
+```
+
+#### Priority Order
+
+FluxCLI resolves kubeconfig in the following priority order:
+
+1. **Command line flag** (`--kubeconfig`) - highest priority
+2. **KUBECONFIG environment variable** - if no flag specified
+3. **Default location** (`$HOME/.kube/config`) - fallback
+
+This behavior matches `kubectl` and other Kubernetes tools, making FluxCLI easy to integrate into existing workflows.
+
 ## 🎮 Usage
 
 ### Basic Navigation

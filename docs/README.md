@@ -39,6 +39,30 @@ fluxcli --kubeconfig ~/.kube/config
 fluxcli --context my-cluster
 ```
 
+### Kubernetes Configuration
+
+FluxCLI respects the standard Kubernetes configuration conventions:
+
+#### Environment Variable Support
+
+```bash
+# Use KUBECONFIG environment variable (recommended)
+export KUBECONFIG=/path/to/your/kubeconfig
+fluxcli
+
+# Multiple kubeconfig files
+export KUBECONFIG=/path/to/config1:/path/to/config2
+fluxcli
+```
+
+#### Configuration Priority
+
+1. `--kubeconfig` command line flag (highest priority)
+2. `KUBECONFIG` environment variable
+3. `$HOME/.kube/config` (default fallback)
+
+This follows the same pattern as `kubectl` and other Kubernetes tools.
+
 ### Key Navigation
 
 | Key | Action |

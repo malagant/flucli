@@ -82,9 +82,14 @@ func Load(configFile, kubeconfig, context, namespace string) (*Config, error) {
 	if kubeconfig != "" {
 		cfg.CurrentKubeConfig = kubeconfig
 	} else if cfg.CurrentKubeConfig == "" {
-		// Use default kubeconfig location
-		if home := homedir.HomeDir(); home != "" {
-			cfg.CurrentKubeConfig = filepath.Join(home, ".kube", "config")
+		// Check KUBECONFIG environment variable first
+		if kubeconfigEnv := os.Getenv("KUBECONFIG"); kubeconfigEnv != "" {
+			cfg.CurrentKubeConfig = kubeconfigEnv
+		} else {
+			// Use default kubeconfig location as final fallback
+			if home := homedir.HomeDir(); home != "" {
+				cfg.CurrentKubeConfig = filepath.Join(home, ".kube", "config")
+			}
 		}
 	}
 

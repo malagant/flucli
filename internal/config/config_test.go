@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -35,6 +36,39 @@ func TestLoadWithCommandLineOverrides(t *testing.T) {
 	assert.Equal(t, "/custom/kubeconfig", config.CurrentKubeConfig)
 	assert.Equal(t, "custom-context", config.CurrentContext)
 	assert.Equal(t, "custom-namespace", config.CurrentNamespace)
+}
+
+func TestLoadWithKubeconfigEnvVar(t *testing.T) {
+	// Save original KUBECONFIG env var if it exists
+	originalKubeconfig := os.Getenv("KUBECONFIG")
+	defer func() {
+		if originalKubeconfig != "" {
+			os.Setenv("KUBECONFIG", originalKubeconfig)
+		} else {
+			os.Unsetenv("KUBECONFIG")
+		}
+	}()
+
+	// Test 1: KUBECONFIG env var set, should be used
+	testKubeconfig := "/tmp/test-kubeconfig"
+	os.Setenv("KUBECONFIG", testKubeconfig)
+	
+	config, err := Load("", "", "", "")
+	require.NoError(t, err)
+	assert.Equal(t, testKubeconfig, config.CurrentKubeConfig)
+
+	// Test 2: Command line flag should override KUBECONFIG env var
+	cmdLineKubeconfig := "/tmp/cmdline-kubeconfig"
+	config2, err := Load("", cmdLineKubeconfig, "", "")
+	require.NoError(t, err)
+	assert.Equal(t, cmdLineKubeconfig, config2.CurrentKubeConfig)
+
+	// Test 3: No KUBECONFIG env var, should use default
+	os.Unsetenv("KUBECONFIG")
+	config3, err := Load("", "", "", "")
+	require.NoError(t, err)
+	// Should contain the default path pattern
+	assert.Contains(t, config3.CurrentKubeConfig, ".kube/config")
 }
 
 func TestAddCluster(t *testing.T) {
