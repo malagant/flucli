@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/fluxcd/helm-controller/api v0.36.2
 	github.com/fluxcd/kustomize-controller/api v1.6.0
-	github.com/fluxcd/source-controller/api v1.2.4
+	github.com/fluxcd/source-controller/api v1.6.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.10.0
@@ -30,7 +30,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
-	github.com/fluxcd/pkg/apis/acl v0.1.0 // indirect
+	github.com/fluxcd/pkg/apis/acl v0.7.0 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v1.10.0 // indirect
 	github.com/fluxcd/pkg/apis/meta v1.12.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
