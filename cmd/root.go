@@ -17,7 +17,19 @@ var (
 	namespace   string
 	debug       bool
 	logLevel    string
+	
+	// Version information set by build
+	version   = "dev"
+	commit    = "none"
+	buildTime = "unknown"
 )
+
+// SetVersionInfo sets the version information from the build process
+func SetVersionInfo(v, c, b string) {
+	version = v
+	commit = c
+	buildTime = b
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -74,6 +86,18 @@ func init() {
 	viper.BindPFlag("namespace", rootCmd.PersistentFlags().Lookup("namespace"))
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 	viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
+
+	// Add version command
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version information",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("Version: %s\n", version)
+			fmt.Printf("Commit: %s\n", commit)
+			fmt.Printf("Build Time: %s\n", buildTime)
+		},
+	}
+	rootCmd.AddCommand(versionCmd)
 }
 
 // initConfig reads in config file and ENV variables if set.

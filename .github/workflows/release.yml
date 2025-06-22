@@ -1,0 +1,196 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  GO_VERSION: '1.21'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Get version from tag
+      id: get_version
+      run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+    - name: Generate changelog
+      id: changelog
+      uses: mikepenz/release-changelog-builder-action@v4
+      with:
+        configuration: ".github/release-changelog-config.json"
+        toTag: ${{ steps.get_version.outputs.version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        release_name: FluxCLI ${{ steps.get_version.outputs.version }}
+        body: |
+          ## What's Changed
+          ${{ steps.changelog.outputs.changelog }}
+          
+          ## Installation
+          
+          ### Linux/macOS
+          ```bash
+          # Download and install (replace with your OS/arch)
+          curl -sL https://github.com/malagant/fluxcli/releases/download/${{ steps.get_version.outputs.version }}/fluxcli-linux-amd64.tar.gz | tar xz
+          sudo mv fluxcli /usr/local/bin/
+          ```
+          
+          ### Windows
+          Download the appropriate `.exe` file from the assets below.
+          
+          ## Verification
+          
+          All binaries are checksummed and signed. See `checksums.txt` for verification.
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.version, '-') }}
+
+  build-and-upload:
+    name: Build and Upload
+    runs-on: ubuntu-latest
+    needs: create-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+          
+    - name: Build binaries
+      run: |
+        VERSION=${{ needs.create-release.outputs.version }}
+        COMMIT=${{ github.sha }}
+        BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        
+        LDFLAGS="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}"
+        
+        mkdir -p dist
+        
+        # Build for multiple platforms
+        GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/fluxcli-linux-amd64 .
+        GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/fluxcli-linux-arm64 .
+        GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/fluxcli-darwin-amd64 .
+        GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/fluxcli-darwin-arm64 .
+        GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/fluxcli-windows-amd64.exe .
+        
+    - name: Create archives and checksums
+      run: |
+        cd dist
+        
+        # Create archives for each platform
+        tar -czf fluxcli-linux-amd64.tar.gz fluxcli-linux-amd64
+        tar -czf fluxcli-linux-arm64.tar.gz fluxcli-linux-arm64
+        tar -czf fluxcli-darwin-amd64.tar.gz fluxcli-darwin-amd64
+        tar -czf fluxcli-darwin-arm64.tar.gz fluxcli-darwin-arm64
+        zip fluxcli-windows-amd64.zip fluxcli-windows-amd64.exe
+        
+        # Generate checksums
+        sha256sum *.tar.gz *.zip > checksums.txt
+        
+    - name: Upload Linux amd64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./dist/fluxcli-linux-amd64.tar.gz
+        asset_name: fluxcli-linux-amd64.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Upload Linux arm64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./dist/fluxcli-linux-arm64.tar.gz
+        asset_name: fluxcli-linux-arm64.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Upload Darwin amd64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./dist/fluxcli-darwin-amd64.tar.gz
+        asset_name: fluxcli-darwin-amd64.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Upload Darwin arm64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./dist/fluxcli-darwin-arm64.tar.gz
+        asset_name: fluxcli-darwin-arm64.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Upload Windows amd64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./dist/fluxcli-windows-amd64.zip
+        asset_name: fluxcli-windows-amd64.zip
+        asset_content_type: application/zip
+        
+    - name: Upload checksums
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./dist/checksums.txt
+        asset_name: checksums.txt
+        asset_content_type: text/plain
+
+  update-homebrew:
+    needs: create-release
+    runs-on: ubuntu-latest
+    if: ${{ !contains(needs.create-release.outputs.version, '-') }}
+    steps:
+      - name: Update Homebrew Formula
+        uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          formula-name: fluxcli
+          homebrew-tap: malagant/homebrew-fluxcli
+          base-branch: main
+          download-url: https://github.com/malagant/fluxcli/archive/refs/tags/${{ needs.create-release.outputs.version }}.tar.gz
+          commit-message: |
+            fluxcli ${{ needs.create-release.outputs.version }}
+
+            Created by https://github.com/mislav/bump-homebrew-formula-action
+        env:
+          COMMITTER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
