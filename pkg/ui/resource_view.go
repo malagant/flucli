@@ -67,24 +67,76 @@ func (v *ResourceView) Update(msg tea.Msg) (*ResourceView, tea.Cmd) {
 	
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "j", "down":
+		// Handle arrow keys by checking Type directly
+		switch msg.Type {
+		case tea.KeyDown:
 			v.table, cmd = v.table.Update(msg)
-		case "k", "up":
+		case tea.KeyUp:
 			v.table, cmd = v.table.Update(msg)
-		case "g":
-			// Go to top
+		case tea.KeyLeft:
+			v.table, cmd = v.table.Update(msg)
+		case tea.KeyRight:
+			v.table, cmd = v.table.Update(msg)
+		case tea.KeyPgDown:
+			v.table, cmd = v.table.Update(msg)
+		case tea.KeyPgUp:
+			v.table, cmd = v.table.Update(msg)
+		case tea.KeyHome:
 			if len(v.resources) > 0 {
 				v.table.GotoTop()
 			}
-		case "G":
-			// Go to bottom
+		case tea.KeyEnd:
 			if len(v.resources) > 0 {
 				v.table.GotoBottom()
 			}
-		case "enter":
+		case tea.KeyEnter, tea.KeySpace:
 			// TODO: Show resource details
 			return v, nil
+		default:
+			// Handle string-based keys
+			switch msg.String() {
+			// Vertical navigation - j/k for vim users
+			case "j":
+				v.table, cmd = v.table.Update(tea.KeyMsg{Type: tea.KeyDown})
+			case "k":
+				v.table, cmd = v.table.Update(tea.KeyMsg{Type: tea.KeyUp})
+			
+			// Page navigation with vim-style shortcuts
+			case "ctrl+d":
+				v.table, cmd = v.table.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+			case "ctrl+u":
+				v.table, cmd = v.table.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+			
+			// Vim-style navigation
+			case "g":
+				// Go to top
+				if len(v.resources) > 0 {
+					v.table.GotoTop()
+				}
+			case "G":
+				// Go to bottom
+				if len(v.resources) > 0 {
+					v.table.GotoBottom()
+				}
+			case "H":
+				// Go to top of visible area
+				if len(v.resources) > 0 {
+					v.table.GotoTop()
+				}
+			case "M":
+				// Go to middle of visible area
+				if len(v.resources) > 0 {
+					middle := len(v.resources) / 2
+					for i := 0; i < middle; i++ {
+						v.table, _ = v.table.Update(tea.KeyMsg{Type: tea.KeyDown})
+					}
+				}
+			case "L":
+				// Go to bottom of visible area
+				if len(v.resources) > 0 {
+					v.table.GotoBottom()
+				}
+			}
 		}
 	}
 	
@@ -145,62 +197,53 @@ func (v *ResourceView) createTableRow(resource k8s.Resource) table.Row {
 		name = fmt.Sprintf("%s/%s", resource.Namespace, resource.Name)
 	}
 	
-	// Format ready status
+	// Format ready status (plain text)
 	ready := "False"
-	readyColor := lipgloss.Color("196") // Red
 	if resource.Ready {
 		ready = "True"
-		readyColor = lipgloss.Color("46") // Green
 	}
-	readyFormatted := lipgloss.NewStyle().Foreground(readyColor).Render(ready)
 	
-	// Format status
+	// Format status (plain text)
 	status := resource.Status
 	if status == "" {
 		status = "Unknown"
 	}
-	statusColor := lipgloss.Color("226") // Yellow
-	if resource.Ready {
-		statusColor = lipgloss.Color("46") // Green
-	} else if resource.Suspended {
-		statusColor = lipgloss.Color("244") // Gray
+	if resource.Suspended {
 		status = "Suspended"
 	}
-	statusFormatted := lipgloss.NewStyle().Foreground(statusColor).Render(status)
 	
-	// Format age
+	// Truncate status if too long
+	if len(status) > 12 {
+		status = status[:9] + "…"
+	}
+	
+	// Format age (plain text)
 	age := formatAge(resource.Age)
-	ageFormatted := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render(age)
 	
 	// Format message (truncate if too long)
 	message := resource.Message
 	if len(message) > 35 {
-		message = message[:32] + "..."
+		message = message[:32] + "…"
 	}
-	messageColor := lipgloss.Color("244")
-	if !resource.Ready {
-		messageColor = lipgloss.Color("196")
-	}
-	messageFormatted := lipgloss.NewStyle().Foreground(messageColor).Render(message)
 
 	// Resource-specific columns
 	switch v.resourceType {
 	case k8s.ResourceTypeGitRepository, k8s.ResourceTypeHelmRepository:
-		return table.Row{name, readyFormatted, statusFormatted, ageFormatted, messageFormatted, resource.URL}
+		return table.Row{name, ready, status, age, message, resource.URL}
 	case k8s.ResourceTypeKustomization:
 		source := resource.Source
 		if resource.Path != "" {
 			source = fmt.Sprintf("%s/%s", source, resource.Path)
 		}
-		return table.Row{name, readyFormatted, statusFormatted, ageFormatted, messageFormatted, source}
+		return table.Row{name, ready, status, age, message, source}
 	case k8s.ResourceTypeHelmRelease:
 		chart := resource.Chart
 		if resource.Version != "" {
 			chart = fmt.Sprintf("%s:%s", chart, resource.Version)
 		}
-		return table.Row{name, readyFormatted, statusFormatted, ageFormatted, messageFormatted, chart}
+		return table.Row{name, ready, status, age, message, chart}
 	default:
-		return table.Row{name, readyFormatted, statusFormatted, ageFormatted, messageFormatted}
+		return table.Row{name, ready, status, age, message}
 	}
 }
 

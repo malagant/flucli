@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,10 +21,10 @@ type EventView struct {
 // NewEventView creates a new event view
 func NewEventView(cfg *config.Config) *EventView {
 	columns := []table.Column{
-		{Title: "Type", Width: 8},
-		{Title: "Reason", Width: 15},
-		{Title: "Object", Width: 25},
-		{Title: "Message", Width: 50},
+		{Title: "Type", Width: 6},
+		{Title: "Reason", Width: 12},
+		{Title: "Object", Width: 22},
+		{Title: "Message", Width: 60},
 		{Title: "Time", Width: 8},
 		{Title: "Count", Width: 5},
 	}
@@ -65,20 +64,75 @@ func (v *EventView) Update(msg tea.Msg) (*EventView, tea.Cmd) {
 	
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "j", "down":
+		// Handle arrow keys by checking Type directly
+		switch msg.Type {
+		case tea.KeyDown:
 			v.table, cmd = v.table.Update(msg)
-		case "k", "up":
+		case tea.KeyUp:
 			v.table, cmd = v.table.Update(msg)
-		case "g":
-			// Go to top
+		case tea.KeyLeft:
+			v.table, cmd = v.table.Update(msg)
+		case tea.KeyRight:
+			v.table, cmd = v.table.Update(msg)
+		case tea.KeyPgDown:
+			v.table, cmd = v.table.Update(msg)
+		case tea.KeyPgUp:
+			v.table, cmd = v.table.Update(msg)
+		case tea.KeyHome:
 			if len(v.events) > 0 {
 				v.table.GotoTop()
 			}
-		case "G":
-			// Go to bottom
+		case tea.KeyEnd:
 			if len(v.events) > 0 {
 				v.table.GotoBottom()
+			}
+		case tea.KeyEnter, tea.KeySpace:
+			// TODO: Show event details
+			return v, nil
+		default:
+			// Handle string-based keys
+			switch msg.String() {
+			// Vertical navigation - j/k for vim users
+			case "j":
+				v.table, cmd = v.table.Update(tea.KeyMsg{Type: tea.KeyDown})
+			case "k":
+				v.table, cmd = v.table.Update(tea.KeyMsg{Type: tea.KeyUp})
+			
+			// Page navigation with vim-style shortcuts
+			case "ctrl+d":
+				v.table, cmd = v.table.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+			case "ctrl+u":
+				v.table, cmd = v.table.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+			
+			// Vim-style navigation
+			case "g":
+				// Go to top
+				if len(v.events) > 0 {
+					v.table.GotoTop()
+				}
+			case "G":
+				// Go to bottom
+				if len(v.events) > 0 {
+					v.table.GotoBottom()
+				}
+			case "H":
+				// Go to top of visible area
+				if len(v.events) > 0 {
+					v.table.GotoTop()
+				}
+			case "M":
+				// Go to middle of visible area
+				if len(v.events) > 0 {
+					middle := len(v.events) / 2
+					for i := 0; i < middle; i++ {
+						v.table, _ = v.table.Update(tea.KeyMsg{Type: tea.KeyDown})
+					}
+				}
+			case "L":
+				// Go to bottom of visible area
+				if len(v.events) > 0 {
+					v.table.GotoBottom()
+				}
 			}
 		}
 	}
@@ -150,39 +204,30 @@ func (v *EventView) updateTable() {
 
 // createTableRow creates a table row for an event
 func (v *EventView) createTableRow(event Event) table.Row {
-	// Format event type with color
+	// Use plain text without color styling to avoid display corruption
 	eventType := event.Type
-	typeColor := lipgloss.Color("244") // Default gray
-	switch strings.ToLower(event.Type) {
-	case "normal":
-		typeColor = lipgloss.Color("46") // Green
-	case "warning":
-		typeColor = lipgloss.Color("226") // Yellow
-	case "error":
-		typeColor = lipgloss.Color("196") // Red
+	if len(eventType) > 6 {
+		eventType = eventType[:6]
 	}
-	typeFormatted := lipgloss.NewStyle().Foreground(typeColor).Render(eventType)
 	
 	// Format reason
 	reason := event.Reason
-	if len(reason) > 12 {
-		reason = reason[:12] + "..."
+	if len(reason) > 10 {
+		reason = reason[:9] + "…"
 	}
-	reasonFormatted := lipgloss.NewStyle().Foreground(lipgloss.Color("81")).Render(reason)
 	
 	// Format object
 	object := event.Object
-	if len(object) > 22 {
-		object = object[:22] + "..."
+	if len(object) > 20 {
+		object = object[:19] + "…"
 	}
-	objectFormatted := lipgloss.NewStyle().Foreground(lipgloss.Color("117")).Render(object)
 	
 	// Format message (truncate if too long)
 	message := event.Message
-	maxMessageLength := 45
+	maxMessageLength := 55
 	if v.width > 0 {
 		// Adjust message length based on available width
-		usedWidth := 8 + 15 + 25 + 8 + 5 + 10 // Other columns + padding
+		usedWidth := 6 + 12 + 22 + 8 + 5 + 10 // Other columns + padding
 		maxMessageLength = v.width - usedWidth
 		if maxMessageLength < 20 {
 			maxMessageLength = 20
@@ -190,50 +235,42 @@ func (v *EventView) createTableRow(event Event) table.Row {
 	}
 	
 	if len(message) > maxMessageLength {
-		message = message[:maxMessageLength-3] + "..."
+		message = message[:maxMessageLength-3] + "…"
 	}
-	messageColor := lipgloss.Color("244")
-	if strings.ToLower(event.Type) == "warning" {
-		messageColor = lipgloss.Color("226")
-	} else if strings.ToLower(event.Type) == "error" {
-		messageColor = lipgloss.Color("196")
-	}
-	messageFormatted := lipgloss.NewStyle().Foreground(messageColor).Render(message)
 	
 	// Format timestamp
-	timeFormatted := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render(event.Timestamp)
+	timeFormatted := event.Timestamp
 	
 	// Format count
 	countText := ""
 	if event.Count > 1 {
 		countText = fmt.Sprintf("%d", event.Count)
 	}
-	countFormatted := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render(countText)
 	
 	return table.Row{
-		typeFormatted,
-		reasonFormatted,
-		objectFormatted,
-		messageFormatted,
+		eventType,
+		reason,
+		object,
+		message,
 		timeFormatted,
-		countFormatted,
+		countText,
 	}
 }
 
 // updateTableColumns updates table columns based on width
 func (v *EventView) updateTableColumns() {
 	baseColumns := []table.Column{
-		{Title: "Type", Width: 8},
-		{Title: "Reason", Width: 15},
-		{Title: "Object", Width: 25},
-		{Title: "Message", Width: 45},
+		{Title: "Type", Width: 6},
+		{Title: "Reason", Width: 12},
+		{Title: "Object", Width: 22},
+		{Title: "Message", Width: 60},
 		{Title: "Time", Width: 8},
 		{Title: "Count", Width: 5},
 	}
 
 	// Adjust message column width based on available space
 	if v.width > 0 {
-		fixedWidth := 8 + 15 + 25 + 8 + 5 + 10 // Other columns + padding
+		fixedWidth := 6 + 12 + 22 + 8 + 5 + 10 // Other columns + padding
 		messageWidth := v.width - fixedWidth
 		if messageWidth > 20 {
 			baseColumns[3].Width = messageWidth

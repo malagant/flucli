@@ -263,7 +263,7 @@ func (m *AppModel) handleNormalMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.statusMessage = "Refreshing resources..."
 		cmds = append(cmds, tea.Tick(2000, func(time.Time) tea.Msg { return ClearStatusMsg{} }))
 	}
-	
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -399,7 +399,7 @@ func (m *AppModel) renderFooter() string {
 	} else {
 		shortcuts := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240")).
-			Render("? help | 1-4 resource types | tab switch views | : command mode | ctrl+k/j clusters | q quit")
+			Render("? help | ↑↓←→/jk navigation | 1-4 resource types | tab switch views | : command mode | ctrl+k/j clusters | q quit")
 		footer.WriteString(shortcuts)
 	}
 	
@@ -410,30 +410,35 @@ func (m *AppModel) renderFooter() string {
 func (m *AppModel) renderHelp() string {
 	helpText := `
 Navigation:
-  j/k or ↓/↑    Navigate up/down
-  g/G           Go to top/bottom
-  enter         View details
-  tab           Switch between views
+  j/k or ↓/↑       Navigate up/down
+  ←/→              Horizontal navigation (in tables)
+  ctrl+d/u         Page down/up (half screen)
+  PageUp/PageDown  Page navigation
+  Home/End         Go to first/last item
+  g/G              Go to top/bottom
+  H/M/L            Top/Middle/Bottom of view
+  enter/space      View details
+  tab              Switch between views
   
 Resource Types:
-  1             GitRepositories
-  2             HelmRepositories  
-  3             Kustomizations
-  4             HelmReleases
+  1                GitRepositories
+  2                HelmRepositories  
+  3                Kustomizations
+  4                HelmReleases
   
 Clusters:
-  ctrl+k/j      Previous/Next cluster
+  ctrl+k/j         Previous/Next cluster
   
 Commands (: to enter command mode):
-  suspend <name>    Suspend resource
-  resume <name>     Resume resource
-  reconcile <name>  Trigger reconciliation
+  suspend <n>      Suspend resource
+  resume <n>       Resume resource
+  reconcile <n>    Trigger reconciliation
   
 Other:
-  /             Search/Filter (coming soon)
-  r             Manual refresh
-  ?             Toggle this help
-  q             Quit
+  /                Search/Filter (coming soon)
+  r                Manual refresh
+  ?                Toggle this help
+  q                Quit
 `
 	return lipgloss.NewStyle().
 		Foreground(lipgloss.Color("244")).
