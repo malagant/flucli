@@ -61,7 +61,7 @@ jobs:
     - name: Lint and Security Scan
       uses: golangci/golangci-lint-action@v3
       with:
-        version: 1.52.0
+        version: v1.52.0
         args: --timeout=5m
 
     - name: Install and run gosec
