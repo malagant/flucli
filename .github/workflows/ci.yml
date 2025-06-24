@@ -58,10 +58,10 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
         
-    - name: Run golangci-lint
+    - name: Lint and Security Scan
       uses: golangci/golangci-lint-action@v8
       with:
-        version: latest
+        version: 1.52.0
         args: --timeout=5m
 
     - name: Install and run gosec
