@@ -1,0 +1,32 @@
+FluxCLI is a powerful terminal user interface (TUI) for managing FluxCD resources 
+across multiple Kubernetes clusters. Inspired by tools like K9s, FluxCLI provides an 
+intuitive, keyboard-driven interface specifically designed for GitOps workflows.
+
+Features:
+- Multi-Cluster Support - Seamlessly switch between and manage multiple Kubernetes clusters
+- FluxCD Resource Management - View, monitor, and operate on GitRepository, HelmRepository, 
+  Kustomization, HelmRelease, and ResourceSet resources  
+- Real-time Monitoring - Live updates of resource status, events, and reconciliation progress
+- Intuitive Navigation - K9s-inspired keyboard shortcuts and command patterns
+- Advanced Filtering - Filter resources by namespace, status, cluster, and custom criteria
+- Event Streaming - Monitor FluxCD events and reconciliation status in real-time
+
+Usage:
+  fluxcli [flags]
+  fluxcli [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  version     Print the version information
+
+Flags:
+      --config string       config file (default is $HOME/.fluxcli/config.yaml)
+      --context string      kubernetes context to use
+      --debug               enable debug mode
+  -h, --help                help for fluxcli
+      --kubeconfig string   path to kubeconfig file (default is $KUBECONFIG env var, then $HOME/.kube/config)
+      --log-level string    log level (trace, debug, info, warn, error) (default "info")
+  -n, --namespace string    kubernetes namespace to use
+
+Use "fluxcli [command] --help" for more information about a command.
