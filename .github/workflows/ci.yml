@@ -46,28 +46,54 @@ jobs:
         fail_ci_if_error: false
 
   lint:
-    name: Lint and Security Scan
+    name: Code Quality and Security Analysis
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+      with:
+        fetch-depth: 0  # Required for security scans
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
-        
-    - name: Lint and Security Scan
-      uses: golangci/golangci-lint-action@v3
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v4
       with:
         version: v1.52.0
         args: --timeout=5m
+        skip-cache: false
+        skip-save-cache: false
+        cache-invalidation-interval: 7
 
-    - name: Install and run gosec
+    - name: Run gosec
       run: |
         go install github.com/securego/gosec/cmd/gosec@latest
         gosec ./...
+
+    - name: Run staticcheck
+      run: |
+        go install honnef.co/go/tools/cmd/staticcheck@latest
+        staticcheck ./...
+
+    - name: Run govet
+      run: go vet ./...
 
   build:
     needs: [test, lint]
