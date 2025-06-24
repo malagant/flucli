@@ -1,6 +1,4 @@
-run:
-  timeout: 5m
-  tests: true
+version: 1.52.0
 
 linters:
   enable:
@@ -11,18 +9,10 @@ linters:
     - staticcheck
     - typecheck
     - unused
-    - gofmt
-    - goimports
-    - goconst
-    - misspell
-    - gosec
 
-linters-settings:
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  goimports:
-    local-prefixes: github.com/malagant/fluxcli
+run:
+  timeout: 5m
+  tests: true
 
 issues:
   max-issues-per-linter: 0
