@@ -64,10 +64,10 @@ jobs:
         version: latest
         args: --timeout=5m
 
-    - name: Run gosec
-      uses: securego/gosec@v2
-      with:
-        args: ./...
+    - name: Install and run gosec
+      run: |
+        go install github.com/securego/gosec/cmd/gosec@latest
+        gosec ./...
 
   build:
     needs: [test, lint]
