@@ -46,7 +46,7 @@ jobs:
         fail_ci_if_error: false
 
   lint:
-    name: Lint
+    name: Lint and Security Scan
     runs-on: ubuntu-latest
     
     steps:
@@ -63,6 +63,11 @@ jobs:
       with:
         version: latest
         args: --timeout=5m
+
+    - name: Run gosec
+      uses: securego/gosec@v2
+      with:
+        args: ./...
 
   build:
     needs: [test, lint]
