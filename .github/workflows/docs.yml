@@ -59,19 +59,26 @@ jobs:
     name: Generate CLI Documentation
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.DOC_UPDATE_TOKEN }}
         fetch-depth: 0  # Required for pushing changes
 
     - name: Set up git
       run: |
         git config --global user.email "action@github.com"
         git config --global user.name "GitHub Action"
-        git remote set-url origin https://x-access-token:${{ secrets.DOC_UPDATE_TOKEN }}@github.com/${{ github.repository }}.git
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
+    - name: Configure git permissions
+      run: |
+        git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".pushInsteadOf "https://github.com/"
         
     - name: Set up Go
       uses: actions/setup-go@v5
