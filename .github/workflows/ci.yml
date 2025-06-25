@@ -79,8 +79,9 @@ jobs:
         version: v1.52.0
         args: --timeout=5m
         skip-cache: false
-        skip-save-cache: false
-        cache-invalidation-interval: 7
+        skip-pkg-cache: false
+        skip-build-cache: false
+        install-mode: binary
 
     - name: Run gosec
       run: |
